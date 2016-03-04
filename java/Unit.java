@@ -21,8 +21,28 @@ public class Unit {
             }
         }
         System.out.println("ok");
-
     }
+    public static void verifyBitPacking64() {
+        System.out.println("verifying BitPacking64");
+        final int N = 64;
+        final int TIMES = 1000;
+        Random r = new Random();
+        int[] data = new int[N];
+        long[] compressed = new long[N/2];
+        int[] uncompressed = new int[N];
+        for (int bit = 0; bit < 31; ++bit) {
+            for (int t = 0; t < TIMES; ++t) {
+                for (int k = 0; k < N; ++k) {
+                    data[k] = r.nextInt(1 << bit);
+                }
+                BitPacking64.fastpack(data, 0, compressed, 0, bit);
+                BitPacking64.fastunpack(compressed, 0, uncompressed, 0, bit);
+                if(!Arrays.equals(uncompressed, data)) throw new RuntimeException("bug "+bit);
+            }
+        }
+        System.out.println("ok");
+    }
+
     public static void verifyBitPackingWithReducedArrayAccess() {
         System.out.println("verifying BitPackingWithReducedArrayAccess");
         final int N = 32;
@@ -47,5 +67,6 @@ public class Unit {
     public static void main(String[] args) {
         verifyBitPacking();
         verifyBitPackingWithReducedArrayAccess();
+        verifyBitPacking64();
     }
 }
