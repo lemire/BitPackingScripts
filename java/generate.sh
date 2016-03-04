@@ -4,3 +4,5 @@ python3 ./genbitpackingwithreducedarrayaccess.py > BitPackingWithReducedArrayAcc
 python3 ./genbitpacking.py  > BitPacking.java
 javac Unit.java
 java Unit
+
+echo "Considering typing javac BenchmarkBitPacking.java && java BenchmarkBitPacking "
