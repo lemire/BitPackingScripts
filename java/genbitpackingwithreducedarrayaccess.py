@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-# ./genbitpacking.py  > BitPacking.java
+# ./genbitpacking.py  > BitPackingWithReducedArrayAccess.java
 minlengthofloop = 2
 
 
@@ -23,14 +23,13 @@ print("""
 
 import java.util.Arrays;
 
-public final class BitPacking {
+public final class BitPackingWithReducedArrayAccess {
 
 	""")
 
 
 
 for bit in range(1,32):
-  #if( (bit==4) or (bit==8) or (bit ==16) or (bit == 32)): continue
   print("\n\npublic static void fastpackwithoutmask"+str(bit)+"(final int [] in, int inpos,  final int [] out, int outpos) {");
   inwordpointer = 0
   outcounter = 0
@@ -57,7 +56,6 @@ for bit in range(1,32):
 
 
 for bit in range(1,32):
-  #if( (bit==4) or (bit==8) or (bit ==16) or (bit == 32)): continue
   print("\n\npublic static void fastpack"+str(bit)+"(final int [] in, int inpos,  final int [] out, int outpos) {");
   inwordpointer = 0
   outcounter = 0
@@ -90,19 +88,25 @@ for bit in range(1,32):
   inwordpointer = 0
   outcounter = 0
   incounter = 0
+  print("    int source = in[0 + inpos];")
   for k in range((32 * bit) // 32):
     for x in range(inwordpointer,32,bit):
       if(x + bit < 32):
-        print("    out[",outcounter," + outpos] = ( in[",incounter,"+ inpos] >>> ",x," ) ",mask(bit),";");
-      else:
-        print("    out[",outcounter," + outpos] = ( in[",incounter,"+ inpos] >>> ",x," ) ;");
+        print("    out[",outcounter," + outpos] = ( source >>> ",x," ) ",mask(bit),";");
+      elif (x + bit == 32):
+        print("    out[",outcounter," + outpos] = ( source >>> ",x," ) ;");
+      else :
+        print("    out[",outcounter," + outpos] = ( source >>> ",x," ) ");
       if((x+bit>=32) and (k<((32 * bit) // 32) - 1)):
         while(inwordpointer<32):
           inwordpointer += bit
         incounter  = incounter + 1
         inwordpointer -= 32;
         if(inwordpointer>0):
-          print("    out[",outcounter," + outpos] |= (in[",incounter,"+ inpos] ",mask(inwordpointer),")<<(",bit,"-",inwordpointer,");")
+          print("    | ((source = in[",incounter,"+ inpos]) ",mask(inwordpointer),")<<(",bit,"-",inwordpointer,");")
+          #print("    out[",outcounter," + outpos] |= ((source = in[",incounter,"+ inpos]) ",mask(inwordpointer),")<<(",bit,"-",inwordpointer,");")
+        else :
+         print("    source = in[",incounter,"+ inpos];")
       if((x+bit<32) or (k<((32 * bit) // 32) - 1)):
         outcounter = outcounter + 1
   print("}\n\n")
