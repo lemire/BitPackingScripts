@@ -63,7 +63,7 @@ public class BenchmarkBitPacking {
         }
     }
     private static void test64(boolean verbose) {
-        System.out.println("64-bit packing");
+        if(verbose) System.out.println("64-bit packing");
         DecimalFormat dfspeed = new DecimalFormat("0");
         final int N = 64;
         final int times = 100000;
