@@ -30,7 +30,7 @@ print("""
   _tmp2 = _mm_add_epi32(_mm_slli_si128(_tmp1, 4), _tmp1),\\
   _mm_add_epi32(_tmp2, _mm_shuffle_epi32(prev, 0xff)))
 
-#define Delta4(_tmp0, _prev) _mm_sub_epi32(_tmp0, _mm_or_si128(_mm_slli_si128(_tmp0, 4), _mm_srli_si128(_prev, 12)))
+#define Delta4(_tmp0, _prev) _mm_sub_epi32(_tmp0, _mm_alignr_epi8(_tmp0, _prev, 12))
 """);
 
 
@@ -41,7 +41,7 @@ for length in [32]:
   print("""
 static void __SIMD_integratedfastunpack0_"""+str(length)+"""(__m128i initOffset, const __m128i *  __restrict__ , uint32_t *  __restrict__  _out) {
     __m128i       *out = reinterpret_cast<__m128i*>(_out);
-    
+
     for (unsigned i = 0; i < 8; ++i) {
         _mm_store_si128(out++, initOffset);
         _mm_store_si128(out++, initOffset);
@@ -52,13 +52,13 @@ static void __SIMD_integratedfastunpack0_"""+str(length)+"""(__m128i initOffset,
   """)
 # Unmasked packing
   for bit in range(1,33):
-    print("""  
+    print("""
 static void __SIMD_integratedfastpackwithoutmask"""+str(bit)+"""_"""+str(length)+"""(__m128i initOffset, const uint32_t *  __restrict__ _in, __m128i *  __restrict__  out) {
     const __m128i       *in = reinterpret_cast<const __m128i*>(_in);
     __m128i    OutReg;
 
       """);
-    
+
     if (bit != 32):
       print("    __m128i CurrIn = _mm_load_si128(in);");
       print("    __m128i InReg = Delta4(CurrIn, initOffset);");
@@ -90,7 +90,7 @@ static void __SIMD_integratedfastpackwithoutmask"""+str(bit)+"""_"""+str(length)
             print("    OutReg = _mm_srli_epi32(InReg, " + str(bit) + " - " + str(inwordpointer) + ");");
             #print("    *out =  ( (*in) ) >> (",bit," - ",inwordpointer,");")
         if(valuecounter + 1 < length):
-          print("    ++in;") 
+          print("    ++in;")
 
           if (bit != 32):
             print("    CurrIn = _mm_load_si128(in);");
@@ -99,13 +99,13 @@ static void __SIMD_integratedfastpackwithoutmask"""+str(bit)+"""_"""+str(length)
           else:
             print("    InReg = _mm_load_si128(in);");
           print("");
-        #print("    ++in;") 
+        #print("    ++in;")
         valuecounter = valuecounter + 1
         if(valuecounter == length): break
     assert(valuecounter == length)
     print("\n}\n\n""")
 # Masked packing
-    print("""  
+    print("""
 static void __SIMD_integratedfastpack"""+str(bit)+"""_"""+str(length)+"""(__m128i initOffset, const uint32_t *  __restrict__ _in, __m128i *  __restrict__  out) {
     const __m128i       *in = reinterpret_cast<const __m128i*>(_in);
     __m128i     OutReg;
@@ -113,8 +113,8 @@ static void __SIMD_integratedfastpack"""+str(bit)+"""_"""+str(length)+"""(__m128
       """);
     print("    const static __m128i mask =  _mm_set1_epi32(" + str(mask(bit)) +"U); ;");
     print("");
-     
-    
+
+
     if (bit != 32):
       print("    __m128i CurrIn = _mm_load_si128(in);");
       print("    __m128i InReg = _mm_and_si128(Delta4(CurrIn, initOffset), mask);");
@@ -141,7 +141,7 @@ static void __SIMD_integratedfastpack"""+str(bit)+"""_"""+str(length)+"""(__m128
           if(inwordpointer>0):
             print("    OutReg = _mm_srli_epi32(InReg, " + str(bit) + " - " + str(inwordpointer) + ");");
         if(valuecounter + 1 < length):
-          print("    ++in;") 
+          print("    ++in;")
           if (bit != 32):
             print("    CurrIn = _mm_load_si128(in);");
             print("    InReg = _mm_and_si128(Delta4(CurrIn, initOffset), mask);");
@@ -149,12 +149,12 @@ static void __SIMD_integratedfastpack"""+str(bit)+"""_"""+str(length)+"""(__m128
           else:
             print("    InReg = _mm_load_si128(in);");
           print("");
-        #print("    ++in;") 
+        #print("    ++in;")
         valuecounter = valuecounter + 1
         if(valuecounter == length): break
     assert(valuecounter == length)
     print("\n}\n\n""")
-  
+
   print("""
   static void __SIMD_integratedfastunpack1_32(__m128i initOffset, const  __m128i*  __restrict__ in, uint32_t *  __restrict__  _out) {
     __m128i*   out = reinterpret_cast<__m128i*>(_out);
@@ -183,14 +183,14 @@ static void __SIMD_integratedfastpack"""+str(bit)+"""_"""+str(length)+"""(__m128
     }
 }
   """);
-  
+
   for bit in range(2,33):
     print("""\n
 static void __SIMD_integratedfastunpack"""+str(bit)+"""_"""+str(length)+"""(__m128i initOffset, const  __m128i*  __restrict__ in, uint32_t *  __restrict__  _out) {
       """);
     print("""    __m128i*   out = reinterpret_cast<__m128i*>(_out);
     __m128i    InReg = _mm_load_si128(in);
-    __m128i    OutReg;    
+    __m128i    OutReg;
     __m128i     tmp;
     """);
 
@@ -204,14 +204,14 @@ static void __SIMD_integratedfastunpack"""+str(bit)+"""_"""+str(length)+"""(__m1
       for x in range(inwordpointer,32,bit):
         if(valuecounter == length): break
         if (x > 0):
-          print("    tmp = _mm_srli_epi32(InReg," + str(x) +");"); 
+          print("    tmp = _mm_srli_epi32(InReg," + str(x) +");");
         else:
-          print("    tmp = InReg;"); 
+          print("    tmp = InReg;");
         if(x+bit<32):
           print("    OutReg = _mm_and_si128(tmp, mask);");
         else:
-          print("    OutReg = tmp;");        
-        if((x+bit>=32) ):      
+          print("    OutReg = tmp;");
+        if((x+bit>=32) ):
           while(inwordpointer<32):
             inwordpointer += bit
           if(valuecounter + 1 < length):
@@ -221,9 +221,9 @@ static void __SIMD_integratedfastunpack"""+str(bit)+"""_"""+str(length)+"""(__m1
           if(inwordpointer>0):
             print("    OutReg = _mm_or_si128(OutReg, _mm_slli_epi32(_mm_and_si128(InReg, mask" + str(inwordpointer)+"), " + str(bit) + "-" + str(inwordpointer) + "));");
         if (bit != 32):
-          print("    OutReg = Integrate4(OutReg, initOffset);\n"); 
-          print("    initOffset = OutReg;\n"); 
-        print("    _mm_store_si128(out++, OutReg);\n"); 
+          print("    OutReg = Integrate4(OutReg, initOffset);\n");
+          print("    initOffset = OutReg;\n");
+        print("    _mm_store_si128(out++, OutReg);\n");
         print("");
         valuecounter = valuecounter + 1
         if(valuecounter == length): break
@@ -236,37 +236,37 @@ void simdintegratedunpackregdelta(__m128i initOffset, const __m128i *  __restric
   print("        case 0: __SIMD_integratedfastunpack0_"+str(length)+"(initOffset,in,out); return;\n")
   for bit in range(1,33):
     print("        case "+str(bit)+": __SIMD_integratedfastunpack"+str(bit)+"_"+str(length)+"(initOffset,in,out); return;\n")
-  print("""        default: break;    
+  print("""        default: break;
     }
     throw logic_error("number of bits is unsupported");
 }
 """)
-  
-  
+
+
   print("""
-  
+
   /*assumes that integers fit in the prescribed number of bits*/
 void simdintegratedpackwithoutmaskregdelta(__m128i initOffset, const uint32_t *  __restrict__ in, __m128i *  __restrict__  out, const uint32_t bit) {
     switch(bit) {""")
   print("        case 0: return;\n")
   for bit in range(1,33):
     print("        case "+str(bit)+": __SIMD_integratedfastpackwithoutmask"+str(bit)+"_"+str(length)+"(initOffset,in,out); return;\n")
-  print("""        default: break;    
+  print("""        default: break;
     }
     throw logic_error("number of bits is unsupported");
 }
   """)
 
-  
+
   print("""
-  
+
   /*assumes that integers fit in the prescribed number of bits*/
 void simintegratedpackregdelta(__m128i initOffset, const uint32_t *  __restrict__ in, __m128i *  __restrict__  out, const uint32_t bit) {
     switch(bit) {""")
   print("        case 0: return;\n")
   for bit in range(1,33):
     print("        case "+str(bit)+": __SIMD_integratedfastpack"+str(bit)+"_"+str(length)+"(initOffset, in,out); return;\n")
-  print("""        default: break;    
+  print("""        default: break;
     }
     throw logic_error("number of bits is unsupported");
 }
